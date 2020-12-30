@@ -1,29 +1,21 @@
 import Vue from 'vue'
-import Router from 'vue-router'
-import MovieQuerier from '../views/MovieQuerier.vue'
-import RelationQuerier from '../views/RelationQuerier.vue'
-import Graph from '../views/Graph.vue'
+import VueRouter from 'vue-router'
 
-Vue.use(Router)
+import Index from '../Index.vue'
 
-export default new Router({
-  mode: 'history',
-  base: process.env.BASE_URL,
-  routes: [
-    {
-      path: '/',
-      name: 'moviequerier',
-      component: MovieQuerier
-    },
-    {
-      path: '/relation',
-      name: 'relation',
-      component: RelationQuerier
-    },
-    {
-      path: '/graph',
-      name: 'graph',
-      component: Graph
-    }
-  ]
+
+Vue.use(VueRouter)
+
+const routes = [
+  {
+    path: '/',
+    component: Index,
+    redirect: '/home'
+  },
+]
+
+const router = new VueRouter({
+  routes
 })
+
+export default router
