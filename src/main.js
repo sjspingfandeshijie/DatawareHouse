@@ -2,13 +2,6 @@ import Vue from 'vue'
 import App from './Index.vue'
 import router from './router'
 import store from './store'
-//引入阿里图标
-import './icons/iconfont/iconfont.css'
-
-
-// md5加密
-import md5 from 'js-md5'
-Vue.prototype.$md5 = md5
 
 // ElementUI https://element.eleme.cn/2.0/#/zh-CN/component/installation
 import ElementUI from 'element-ui';
@@ -25,19 +18,21 @@ import axios from 'axios'
 Vue.prototype.$http = axios
 axios.defaults.headers['Content-Type'] = 'application/json';
 
-//设置axios请求头加入token
-axios.interceptors.request.use(config => {
-  if (config.push === '/') {
-  } else {
-      if (window.sessionStorage.getItem('token')) {
-          config.headers.Authorization = `Bearer ${window.sessionStorage.getItem('token')}`;
-      }
-  }
-  return config;
-},
-  error => {
-      console.log("axios.interceptors.request", error)
-  });
+// const proxyObj = {}
+// proxyObj['/'] = {
+//     target: 'http://localhost:8080',
+//     changeOrigin: true,
+//     pathRewrite: {
+//         '^/': ''
+//     }
+// }
+// module.exports = {
+//     devServer: {
+//         host: 'localhost',
+//         port: 8080,
+//         proxy: proxyObj
+//     }
+// }
 
 Vue.config.productionTip = false
 
