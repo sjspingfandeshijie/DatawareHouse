@@ -12,4 +12,7 @@ module.exports = {
     SearchActorUrl: APIRootUrl + 'movie/actors',
     SearchDirectorUrl: APIRootUrl + 'movie/directors',
     SearchGenreUrl: APIRootUrl + 'movie/genre',
+
+    //搜索详情
+    SearchDetailsUrl: APIRootUrl + 'movie/movie',
 }

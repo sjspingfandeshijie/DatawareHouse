@@ -70,10 +70,10 @@
                 <div>
                     <div class="time">
                         <h2>每个请求占一秒的百分比</h2>
-                        <el-progress style="margin-top:15px;" :text-inside="true" :stroke-width="20" :percentage="usedtime.redis"></el-progress>
+                        <el-progress style="margin-top:15px;" :text-inside="true" :stroke-width="20" :percentage="usedtime.mysql"></el-progress>
                         <el-progress :text-inside="true" :stroke-width="20" :percentage="usedtime.neo4j" color="rgba(142, 113, 199, 0.7)"></el-progress>
-                        <el-progress :text-inside="true" :stroke-width="20" :percentage="usedtime.influxdb" status="success"></el-progress>
-                        <el-progress :text-inside="true" :stroke-width="20" :percentage="usedtime.zonghedb" status="exception"></el-progress>
+                        <el-progress :text-inside="true" :stroke-width="20" :percentage="usedtime.hive" status="success"></el-progress>
+<!--                        <el-progress :text-inside="true" :stroke-width="20" :percentage="usedtime.zonghedb" status="exception"></el-progress>-->
                     </div>
                     <div class="label">
                         <p>Redis</p>
@@ -89,6 +89,11 @@
                 <el-table-column prop="productId" label="电影ID" width="100"></el-table-column>
                 <el-table-column prop="title" label="电影名称" width="150"></el-table-column>
                 <el-table-column prop="director" label="导演" width="150"></el-table-column>
+                <el-table-column label="显示详情">
+                    <template slot-scope="scope">
+                        <el-button type="text" @click="showDetails(scope.row.movieId)">查看详情</el-button>
+                    </template>
+                </el-table-column>
             </el-table>
         </div>
         <!--            分页区域-->
@@ -102,6 +107,59 @@
             :total="totalCount"
         >
         </el-pagination>
+
+        <!--        展示赞助申请的对话框-->
+        <el-dialog title="公告详情" :visible.sync="showDialogVisible"
+                   width="50%" center>
+            <!--            展示内容主体区域 -->
+            <el-form :model="showForm" label-width="150px">
+                <el-form-item label="产品ID">
+                    <el-input v-model="showForm.productId" placeholder="产品ID" readonly>
+                    </el-input>
+                </el-form-item>
+                <el-form-item label="电影名称">
+                    <el-input v-model="showForm.title" placeholder="电影名称" readonly>
+                    </el-input>
+                </el-form-item>
+                <el-form-item label="电影类别">
+                    <el-input v-model="showForm.genres" placeholder="电影类别" readonly>
+                    </el-input>
+                </el-form-item>
+                <el-form-item label="导演">
+                    <el-input v-model="showForm.director" placeholder="导演" readonly>
+                    </el-input>
+                </el-form-item>
+                <el-form-item label="主演">
+                    <el-input v-model="showForm.actor" placeholder="主演" readonly>
+                    </el-input>
+                </el-form-item>
+                <el-form-item label="参演">
+                    <el-input v-model="showForm.supportingActors" placeholder="参演" readonly>
+                    </el-input>
+                </el-form-item>
+                <el-form-item label="评分">
+                    <el-input v-model="showForm.star" placeholder="评分" readonly>
+                    </el-input>
+                </el-form-item>
+                <el-form-item label="上映时间">
+                    <el-input v-model="showForm.releaseDate" placeholder="上映时间" readonly>
+                    </el-input>
+                </el-form-item>
+                <el-form-item label="星期">
+                    <el-input v-model="showForm.week" placeholder="星期" readonly>
+                    </el-input>
+                </el-form-item>
+                <el-form-item label="播放时长">
+                    <el-input v-model="showForm.runTime" placeholder="播放时长" readonly>
+                    </el-input>
+                </el-form-item>
+
+            </el-form>
+            <!--            底部区域-->
+            <span slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="closeDialogVisible">确 定</el-button>
+            </span>
+        </el-dialog>
     </div>
 </template>
 
@@ -150,10 +208,9 @@ export default {
             }],
 
             usedtime:{
-                redis: 40,
-                neo4j: 30,
-                influxdb: 20,
-                zonghedb: 10,
+                mysql: 0,
+                neo4j: 0,
+                hive: 0,
             },
 
             form: {
@@ -175,9 +232,23 @@ export default {
             totalCount: 0,
             pageNum: 1,
             pageSize: 5,
+
+            showDialogVisible: false,
+            showForm: [],
         }
     },
     methods: {
+        async showDetails(movieId)
+        {
+            let result = await this.$http.post(this.$api.SearchDetailsUrl + "/" + movieId);
+            console.log(result.data.data.movie)
+            this.showForm = result.data.data.movie;
+            this.showDialogVisible = true;
+        },
+        closeDialogVisible()
+        {
+            this.showDialogVisible = false;
+        },
         async submit(){
             // console.log(this.form.releaseDate.substring(5, 7))
             // let result = await this.$http.post(
@@ -219,6 +290,7 @@ export default {
             console.log(result.data.data);
             this.movieData = result.data.data.movies;
             this.totalCount = result.data.data.total;
+            this.usedtime.mysql = result.data.data.time;
         },
         //监听pageSize改变的事件
         async handleSizeChange(newSize) {
