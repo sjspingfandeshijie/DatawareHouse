@@ -5,9 +5,9 @@
             <hr />
             <div class="content">
                 <div class="myform">
-                    <el-form ref="form" :model="form" label-width="100px">
+                    <el-form ref="form" :model="form" label-position="left" label-width="100px">
                         <el-form-item label="产品ID">
-                            <el-input v-model="form.productId" placeholder="产品ID">
+                            <el-input v-model="form.productID" placeholder="产品ID">
                             </el-input>
                         </el-form-item>
                         <el-form-item label="电影名称">
@@ -22,25 +22,45 @@
                             <el-input v-model="form.director" placeholder="导演名字">
                             </el-input>
                         </el-form-item>
-                        <el-form-item label="主演名字">
-                            <el-input v-model="form.actor" placeholder="主演名字">
+                        <el-form-item label="演员名字">
+                            <el-input v-model="form.actor" placeholder="演员名字">
                             </el-input>
-                        </el-form-item>
-                        <el-form-item label="参演名字">
-                            <el-input v-model="form.supportingActors" placeholder="参演名字">
-                            </el-input>
+                            <el-radio-group v-model="form.isStarring">
+                                <el-radio-button label="true">主演</el-radio-button>
+                                <el-radio-button label="false">参演</el-radio-button>
+                            </el-radio-group>
                         </el-form-item>
                         <el-form-item label="评分">
-                            <el-input v-model="form.star" placeholder="评分">
-                            </el-input>
-                        </el-form-item>
-                        <el-form-item label="时长">
-                            <el-input v-model="form.runTime" placeholder="时长">
+                            <el-input v-model="form.score" placeholder="评分">
                             </el-input>
                         </el-form-item>
                         <el-form-item label="上映时间">
-                            <el-date-picker v-model="form.releaseDate" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期">
+                            <el-date-picker
+                                v-model="form.releaseDate"
+                                type="month"
+                                value-format="yyyy-MM"
+                                placeholder="选择月">
                             </el-date-picker>
+                        </el-form-item>
+                        <el-form-item label="星期">
+                            <el-select v-model="form.week" placeholder="请选择">
+                                <el-option
+                                    v-for="item in options"
+                                    :key="item.value"
+                                    :label="item.label"
+                                    :value="item.value">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="季节">
+                            <el-select v-model="form.quarter" placeholder="请选择">
+                                <el-option
+                                    v-for="item in options2"
+                                    :key="item.value"
+                                    :label="item.label"
+                                    :value="item.value">
+                                </el-option>
+                            </el-select>
                         </el-form-item>
                         <el-form-item>
                             <el-button type="primary" @click="submit">Search</el-button>
@@ -66,15 +86,22 @@
         </div>
         <div id="result">
             <el-table :data="movieData" height="550" stripe style="width: 100%">
+                <el-table-column prop="productId" label="电影ID" width="100"></el-table-column>
                 <el-table-column prop="title" label="电影名称" width="150"></el-table-column>
-                <el-table-column prop="id" label="电影ID" width="100"></el-table-column>
-                <el-table-column prop="actor" label="演员" width="150"></el-table-column>
                 <el-table-column prop="director" label="导演" width="150"></el-table-column>
-                <el-table-column prop="genre" label="分类" width="120"></el-table-column>
-                <el-table-column prop="reviewnum" sortable label="评论数" width="100"></el-table-column>
-                <el-table-column prop="time" sortable label="上映时间"></el-table-column>
             </el-table>
         </div>
+        <!--            分页区域-->
+        <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="pageNum"
+            :page-sizes="[1, 2, 5, 10]"
+            :page-size="pageSize"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="totalCount"
+        >
+        </el-pagination>
     </div>
 </template>
 
@@ -83,62 +110,129 @@ export default {
     name: "MovieTotal",
     data() {
         return {
+            options: [
+                {
+                value: '0',
+                label: '星期日'
+            }, {
+                value: '1',
+                label: '星期一'
+            }, {
+                value: '2',
+                label: '星期二'
+            }, {
+                value: '3',
+                label: '星期三'
+            }, {
+                value: '4',
+                label: '星期四'
+            }, {
+                value: '5',
+                label: '星期五'
+            }, {
+                value: '6',
+                label: '星期六'
+            }],
+
+            options2: [
+                {
+                value: '1',
+                label: '第一季度'
+            }, {
+                value: '2',
+                label: '第二季度'
+            }, {
+                value: '3',
+                label: '第三季度'
+            }, {
+                value: '4',
+                label: '第四季度'
+            }],
+
             usedtime:{
                 redis: 40,
                 neo4j: 30,
                 influxdb: 20,
                 zonghedb: 10,
             },
+
             form: {
                 productID: '',
                 title: '',
                 director: '',
                 actor: '',
-                supportingActors: '',
+                isStarring: '',
                 genre: '',
-                star: '',
+                score: '',
                 releaseDate: '',
                 runTime: '',
+                week: '',
+                quarter: '',
             },
-            movieData: []
+
+            movieData: [],
+
+            totalCount: 0,
+            pageNum: 1,
+            pageSize: 5,
         }
     },
     methods: {
         async submit(){
-            let obj = this;
-            this.$message('正在查询，请稍后！');
-            let start = '';
-            let end = '';
-            if(this.form.date){
-                start = this.form.date[0];
-                end = this.form.date[1];
-            }
+            // console.log(this.form.releaseDate.substring(5, 7))
             // let result = await this.$http.post(
             //     this.$api.SearchMovieUrl,
             //     {
-            //         productID: this.form.productID,
+            //         pageNum: this.pageNum,
+            //         pageSize: this.pageSize,
             //         title: this.form.title,
             //         director: this.form.director,
             //         actor: this.form.actor,
-            //         supportingActors: this.form.supportingActors,
+            //         isStarring: this.form.isStarring,
             //         genre: this.form.genre,
-            //         score: this.form.star,
-            //         // releaseDate: this.form.releaseDate,
-            //         runTime: this.form.runTime,
+            //         score: this.form.score,
+            //         week: this.form.week,
+            //         quarter: this.form.quarter,
+            //         // year: this.form.releaseDate.substring(0, 4),
+            //         // month: this.form.releaseDate.substring(5, 7),
+            //         // runTime: this.form.runTime,
             //     }
             // );
             let result = await this.$http.post(
                 this.$api.SearchMovieUrl,
                 {
-                    title: "2:13",
-                    // director: "Charles Adelman",
-                    // actor: "Kevin Pollack",
-                    // genre: "Drama",
-                    // score: 2,
+                    pageNum: 1,
+                    pageSize: 5,
+                    // title: "",
+                    director: "Charles Adelman",
+                    actor: "Kevin Pollack",
+                    isStarring: this.form.isStarring,
+                    // genre: this.form.genre,
+                    // score: this.form.score,
+                    // week: this.form.week,
+                    // quarter: this.form.quarter,
+                    // year: this.form.releaseDate.substring(0, 4),
+                    // month: this.form.releaseDate.substring(5, 7),
+                    // runTime: this.form.runTime,
                 }
             );
-            console.log(result)
-        }
+            console.log(result.data.data);
+            this.movieData = result.data.data.movies;
+            this.totalCount = result.data.data.total;
+        },
+        //监听pageSize改变的事件
+        async handleSizeChange(newSize) {
+            this.pageSize = newSize;
+            this.pageNumber = 1;
+            // console.log("pageSize:"+this.pageSize);
+            await this.submit();
+        },
+        //监听pageNum改变的事件
+        async handleCurrentChange(newPage) {
+            this.pageNum = newPage;
+            // console.log("pageNumber:"+this.pageNumber);
+            await this.submit();
+        },
     },
 }
 </script>
@@ -186,28 +280,6 @@ hr{
 h2{
     font-size: 1.2em;
     margin-bottom: 8%;
-}
-
-#result{
-    display: block;
-    margin-top: 20px;
-}
-h1{
-    margin: 0;
-    padding: 0;
-    font-size: 1.2em;
-    font-weight: 600;
-    position: relative;
-    right: 35%;
-    display: block;
-}
-hr{
-    display: block;
-    margin-top: 2%;
-    margin-bottom: 2%;
-}
-.myform{
-    float: left;
 }
 
 </style>
